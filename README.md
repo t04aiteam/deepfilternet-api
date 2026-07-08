@@ -30,24 +30,30 @@ pip install torch==2.0.1 torchaudio==2.0.2 --index-url https://download.pytorch.
 pip install -r requirements.txt
 
 # 4. configure
-cp .env.example .env      # choose MODEL_NAME / DEVICE
+cp .env.example .env      # choose MODEL_NAME / POST_FILTER / limits
 ```
+
+Note: the app does not load `.env` by itself. Docker Compose injects it via
+`env_file:`; for local runs pass `--env-file .env` to uvicorn (shown below)
+or export the variables in your shell.
 
 ## Environment variables
 
-| Name               | Required | Default          | Description                                              |
-|--------------------|----------|------------------|----------------------------------------------------------|
-| `MODEL_NAME`       | no       | `DeepFilterNet3` | `DeepFilterNet`, `DeepFilterNet2`, or `DeepFilterNet3`   |
-| `DEVICE`           | no       | auto             | `cpu` or `cuda` (auto-detected if unset)                 |
-| `POST_FILTER`      | no       | `false`          | Over-attenuate very noisy sections (`true`/`false`)      |
-| `MAX_UPLOAD_BYTES` | no       | `52428800`       | Reject uploads larger than this (50 MB default)          |
-| `CORS_ORIGINS`     | no       | `*`              | Comma-separated allowed origins                          |
+| Name                   | Required | Default          | Description                                              |
+|------------------------|----------|------------------|----------------------------------------------------------|
+| `MODEL_NAME`           | no       | `DeepFilterNet3` | `DeepFilterNet`, `DeepFilterNet2`, or `DeepFilterNet3`   |
+| `POST_FILTER`          | no       | `false`          | Over-attenuate very noisy sections (`true`/`false`)      |
+| `MAX_UPLOAD_BYTES`     | no       | `52428800`       | Reject uploads larger than this (50 MB default)          |
+| `CORS_ORIGINS`         | no       | `*`              | Comma-separated allowed origins                          |
+| `CUDA_VISIBLE_DEVICES` | no       | —                | The device is auto-detected (CUDA if visible, else CPU). Set to `""` to force CPU on a GPU machine |
 
 ## Run locally
 
 ```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 7551
+uvicorn main:app --host 0.0.0.0 --port 8000 --env-file .env
 ```
+
+(`python main.py` also works but serves on port **7551** and does not read `.env`.)
 
 The model loads at startup, so the first request is not slowed by a cold load.
 Interactive docs: http://localhost:8000/docs
@@ -99,8 +105,9 @@ curl -X POST http://localhost:8000/api/v1/enhance \
 
 - **Sample rate:** DeepFilterNet operates at 48 kHz. Uploads at other rates are
   resampled automatically; the response is always 48 kHz.
-- **CPU vs GPU:** runs comfortably on CPU (it is designed for real-time use). Set
-  `DEVICE=cuda` and install a CUDA torch build to use a GPU.
+- **CPU vs GPU:** runs comfortably on CPU (it is designed for real-time use). A GPU
+  is used automatically when one is visible and a CUDA torch build is installed;
+  set `CUDA_VISIBLE_DEVICES=""` to force CPU.
 - **Model choice:** `DeepFilterNet3` is newest and recommended. `DeepFilterNet2`
   is a solid, slightly lighter alternative.
 - **Concurrency:** a single uvicorn worker serves requests sequentially through a
