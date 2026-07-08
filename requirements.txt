@@ -1,0 +1,16 @@
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+# DeepFilterNet bundles the pretrained DeepFilterNet2/3 weights.
+deepfilternet>=0.5.6
+# torch/torchaudio are PINNED: deepfilternet 0.5.x imports
+# `torchaudio.backend.common`, which torchaudio >=2.2 removed. These versions
+# keep that module and have CPython 3.9-3.11 wheels.
+# Install the matching CPU (or CUDA) build BEFORE the rest:
+#   pip install torch==2.0.1 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
+torch==2.0.1
+torchaudio==2.0.2
+# numpy must stay <2.0 for torch 2.0.1 ABI compatibility.
+numpy<2.0
+soundfile>=0.12.1
+python-dotenv>=1.0.0

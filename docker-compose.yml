@@ -1,0 +1,16 @@
+services:
+  api:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    restart: unless-stopped
+    # GPU: install a CUDA torch build in the Dockerfile and uncomment below.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
