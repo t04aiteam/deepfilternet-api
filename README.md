@@ -50,13 +50,13 @@ or export the variables in your shell.
 ## Run locally
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --env-file .env
+uvicorn main:app --host 0.0.0.0 --port 7551 --env-file .env
 ```
 
 (`python main.py` also works but serves on port **7551** and does not read `.env`.)
 
 The model loads at startup, so the first request is not slowed by a cold load.
-Interactive docs: http://localhost:8000/docs
+Interactive docs: http://localhost:7551/docs
 
 ## Run with Docker
 
@@ -82,21 +82,21 @@ Accepted uploads: `.wav`, `.flac`, `.ogg`, `.mp3` decode in memory; video (`mp4`
 Health check:
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:7551/health
 # {"status":"ok","model":"DeepFilterNet3","device":"cpu","sample_rate":48000}
 ```
 
 Model info:
 
 ```bash
-curl http://localhost:8000/api/v1/info
+curl http://localhost:7551/api/v1/info
 # {"model":"DeepFilterNet3","device":"cpu","sample_rate":48000,"post_filter":false}
 ```
 
 Enhance a noisy file (writes the denoised WAV to `enhanced.wav`):
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/enhance \
+curl -X POST http://localhost:7551/api/v1/enhance \
   -F "file=@noisy_audio.wav" \
   --output enhanced.wav
 ```

@@ -8,9 +8,9 @@ Upload a noisy audio file and get a denoised **48 kHz 16-bit WAV** back.
 POST /api/v1/enhance
 ```
 
-Base URL (default): `http://localhost:8000`
+Base URL (default): `http://localhost:7551`
 
-Full URL: `http://localhost:8000/api/v1/enhance`
+Full URL: `http://localhost:7551/api/v1/enhance`
 
 No authentication is required.
 
@@ -19,7 +19,7 @@ No authentication is required.
 ## Postman setup
 
 1. **Method**: `POST`
-2. **URL**: `http://localhost:8000/api/v1/enhance`
+2. **URL**: `http://localhost:7551/api/v1/enhance`
 3. **Body** tab → select **form-data**.
 4. Add one key:
 
@@ -73,9 +73,9 @@ Example error body:
 
 ## Quick checks
 
-- **Health probe**: `GET http://localhost:8000/health`
+- **Health probe**: `GET http://localhost:7551/health`
   ```json
   { "status": "ok", "model": "DeepFilterNet3", "device": "cpu", "sample_rate": 48000 }
   ```
-- **Model info**: `GET http://localhost:8000/api/v1/info`
-- **Interactive docs**: open `http://localhost:8000/docs` in a browser.
+- **Model info**: `GET http://localhost:7551/api/v1/info`
+- **Interactive docs**: open `http://localhost:7551/docs` in a browser.
