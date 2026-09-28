@@ -34,7 +34,7 @@ No authentication is required.
 6. Click **Send**.
 
 ### Supported input formats
-`.wav`, `.flac`, `.ogg`, `.mp3` — any sample rate (audio is resampled to 48 kHz internally).
+`.wav`, `.flac`, `.ogg`, `.mp3` decode in memory; video (`mp4`, `mov`, `mkv`, `webm`: the audio track is used) and `m4a`/`aac` are decoded by the host's `ffmpeg`. Any sample rate (audio is resampled to 48 kHz internally). The file content decides, not the filename.
 
 Max upload size: **50 MB** (configurable via `MAX_UPLOAD_BYTES`).
 
@@ -60,13 +60,13 @@ The server also sets a download filename via the `Content-Disposition` header
 |--------|----------------------------------------------------------------|
 | `400`  | Empty file upload.                                             |
 | `413`  | File larger than the configured limit (default 50 MB).        |
-| `415`  | Unsupported file type (not wav/flac/ogg/mp3).                 |
-| `500`  | Decoding or enhancement failed.                               |
+| `415`  | Unreadable audio: not a format libsndfile or ffmpeg can decode, or a video with no audio track. |
+| `500`  | Enhancement failed.                                           |
 
 Example error body:
 
 ```json
-{ "detail": "Unsupported file type '.m4a'. Allowed: ['.flac', '.mp3', '.ogg', '.wav']" }
+{ "detail": "Unsupported or unreadable audio: ffmpeg: Output file does not contain any stream" }
 ```
 
 ---

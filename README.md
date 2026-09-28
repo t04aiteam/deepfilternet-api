@@ -75,7 +75,7 @@ No authentication — the service is intended for trusted local-network deployme
 | GET    | `/api/v1/info`   | —                         | JSON: model metadata               |
 | POST   | `/api/v1/enhance`| multipart file (`file=@`) | `audio/wav` (enhanced 48 kHz WAV)  |
 
-Accepted upload formats: `.wav`, `.flac`, `.ogg`, `.mp3`. Output is always 48 kHz 16-bit WAV.
+Accepted uploads: `.wav`, `.flac`, `.ogg`, `.mp3` decode in memory; video (`mp4`/`mov`/`mkv`/`webm`, the audio track is used) and `m4a`/`aac` go through the host's `ffmpeg`. The file content decides, not its name. Output is always 48 kHz 16-bit WAV.
 
 ## Examples
 

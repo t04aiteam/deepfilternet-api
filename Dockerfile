@@ -1,8 +1,8 @@
 FROM python:3.11-slim
 
-# libsndfile1 is required by soundfile; git is occasionally needed by deps.
+# libsndfile1 is required by soundfile; ffmpeg decodes video and m4a uploads.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsndfile1 ca-certificates && rm -rf /var/lib/apt/lists/*
+    libsndfile1 ffmpeg ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
