@@ -65,8 +65,10 @@ def _decode(raw: bytes):
         )
         if proc.returncode != 0 or not proc.stdout:
             err = proc.stderr.decode(errors="replace").replace(tmp.name, "upload")
-            last = err.strip().splitlines()[-1:] or ["no audio samples"]
-            raise ValueError(f"ffmpeg: {last[0]}")
+            # The reason ("does not contain any stream") comes before the
+            # generic last line ("Error opening output files").
+            why = " | ".join(x.strip() for x in err.splitlines() if x.strip())
+            raise ValueError(f"ffmpeg: {why[:300] or 'no audio samples'}")
     return np.frombuffer(proc.stdout, dtype=np.float32).reshape(-1, 1), sr
 
 

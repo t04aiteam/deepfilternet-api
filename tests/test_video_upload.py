@@ -143,6 +143,8 @@ class VideoUploadTests(unittest.TestCase):
             post("clip.mp4", fixtures()["silent_mp4"])
         self.assertEqual(ctx.exception.status_code, 415)
         self.assertIn("Unsupported or unreadable audio", ctx.exception.detail)
+        # ffmpeg says why on an earlier line than its last one; keep it.
+        self.assertIn("stream", ctx.exception.detail)
 
     def test_native_wav_keeps_channels_and_skips_ffmpeg(self):
         with mock.patch.object(route.subprocess, "run") as run:
