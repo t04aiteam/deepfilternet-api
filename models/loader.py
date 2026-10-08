@@ -33,6 +33,30 @@ _df_state = None
 _lock = threading.Lock()
 
 
+def tolerate_missing_git() -> None:
+    """Let init_df run on a box without git (c09 may have none).
+
+    DeepFilterNet's logger asks git for a commit hash and catches only
+    CalledProcessError, so a missing git binary (FileNotFoundError) stops the
+    model from loading. The hash only goes into a log line.
+    """
+    import df.logger
+    import df.utils
+
+    def commit_hash():
+        """Return df's git commit hash, or None without git.
+
+        Returns:
+            The hash string, or None.
+        """
+        try:
+            return df.utils.get_commit_hash()
+        except FileNotFoundError:
+            return None
+
+    df.logger.get_commit_hash = commit_hash
+
+
 def get_device() -> str:
     """Report the device DeepFilterNet will actually use."""
     return "cuda" if torch.cuda.is_available() else "cpu"
@@ -50,6 +74,8 @@ def get_model():
         with _lock:
             if _model is None:  # double-checked locking
                 from df.enhance import init_df  # lazy import
+
+                tolerate_missing_git()
 
                 # init_df returns (model, df_state, suffix[, epoch]) -- the
                 # released 0.5.x gives 3 values, GitHub main gives 4. Take the
