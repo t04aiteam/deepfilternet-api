@@ -24,7 +24,7 @@ import soundfile as sf
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
-from models.loader import enhance_waveform, get_sample_rate
+from models.loader import enhance_waveform, get_sample_rate, idle_model
 from schemas.request import InfoResponse
 
 router = APIRouter()
@@ -126,7 +126,7 @@ async def enhance_audio(file: UploadFile = File(...)):
             status_code=415, detail=f"Unsupported or unreadable audio: {e}"
         )
     try:
-        wav_bytes = await loop.run_in_executor(None, _run_enhance, data, orig_sr)
+        wav_bytes = await idle_model.run(_run_enhance, data, orig_sr)
     except HTTPException:
         raise
     except Exception as e:  # inference failure
@@ -147,7 +147,7 @@ async def info():
 
     return InfoResponse(
         model=MODEL_NAME,
-        device=get_device(),
+        device="cuda" if os.getenv("TTS_GPU_FRONTEND") == "1" else get_device(),
         sample_rate=get_sample_rate(),
         post_filter=POST_FILTER,
     )
