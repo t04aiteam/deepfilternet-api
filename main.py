@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from models.loader import MODEL_NAME, get_device, get_model, get_sample_rate
+from models.loader import MODEL_NAME, get_device, get_sample_rate, idle_model
 from routes.enhance import router
 from schemas.request import HealthResponse
 
@@ -20,8 +20,8 @@ from schemas.request import HealthResponse
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Warm up at startup: fails fast if weights can't be loaded.
-    get_model()
-    yield
+    async with idle_model.lifespan():
+        yield
 
 
 app = FastAPI(
@@ -43,11 +43,11 @@ app.include_router(router, prefix="/api/v1")
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    """Liveness/readiness probe. Confirms the model is loaded."""
+    """Report the ready service and its configured device."""
     return HealthResponse(
         status="ok",
         model=MODEL_NAME,
-        device=get_device(),
+        device="cuda" if os.getenv("TTS_GPU_FRONTEND") == "1" else get_device(),
         sample_rate=get_sample_rate(),
     )
 

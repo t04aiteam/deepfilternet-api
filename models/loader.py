@@ -6,8 +6,8 @@ returns an enhanced (denoised) waveform at 48 kHz. We use the official
 no separate checkpoint file to download -- ``init_df()`` loads them (downloading
 to a local cache on first run).
 
-The model is loaded once at startup (see main.py lifespan) and reused for every
-request. For multiple uvicorn workers, each process loads its own copy.
+The model loads at startup and can unload after inactivity. Each worker has
+its own model and idle timer.
 
 Device note: DeepFilterNet's own ``enhance()`` selects the compute device via
 ``df.modules.get_device()`` (CUDA if visible, else CPU) and places feature
@@ -16,11 +16,15 @@ would cause a model/feature device mismatch. To force CPU on a CUDA box, hide
 the GPU with ``CUDA_VISIBLE_DEVICES=""`` before launch.
 """
 
+import gc
 import os
 import threading
+from contextlib import nullcontext
 
 import numpy as np
 import torch
+
+from models.idle import IdleModel
 
 # Model name: one of "DeepFilterNet", "DeepFilterNet2", "DeepFilterNet3".
 # DeepFilterNet3 is the newest and the recommended default.
@@ -30,6 +34,7 @@ POST_FILTER = os.getenv("POST_FILTER", "false").lower() in ("1", "true", "yes")
 
 _model = None
 _df_state = None
+_sample_rate = 48000
 _lock = threading.Lock()
 
 
@@ -69,7 +74,7 @@ def get_model():
     configuration and exposes ``df_state.sr()`` -- the model's native sample
     rate (48000 Hz). ``init_df`` already moves the model to the correct device.
     """
-    global _model, _df_state
+    global _model, _df_state, _sample_rate
     if _model is None:
         with _lock:
             if _model is None:  # double-checked locking
@@ -86,14 +91,31 @@ def get_model():
                 )
                 model, df_state = result[0], result[1]
                 model.eval()
+                _sample_rate = df_state.sr()
                 _model, _df_state = model, df_state
     return _model, _df_state
 
 
+def unload_model():
+    """Release the denoising model and its processing state while idle."""
+    global _model, _df_state
+    with _lock:
+        _model = _df_state = None
+    gc.collect()
+    if torch.cuda.is_initialized():
+        torch.cuda.empty_cache()
+
+
+idle_model = IdleModel(
+    get_model,
+    unload_model,
+    int(os.getenv("MODEL_IDLE_SECONDS", "0")),
+)
+
+
 def get_sample_rate() -> int:
-    """Return the model's native sample rate (Hz)."""
-    _, df_state = get_model()
-    return df_state.sr()
+    """Return the native sample rate without loading an idle model."""
+    return _sample_rate
 
 
 def enhance_waveform(audio: np.ndarray) -> np.ndarray:
@@ -109,5 +131,12 @@ def enhance_waveform(audio: np.ndarray) -> np.ndarray:
 
     model, df_state = get_model()
     tensor = torch.from_numpy(np.ascontiguousarray(audio))
-    enhanced = enhance(model, df_state, tensor)
-    return enhanced.cpu().numpy()
+    use_cuda = torch.cuda.is_initialized()
+    # Keep cleanup inside the same lock as CUDA inference.
+    with _lock if use_cuda else nullcontext():
+        try:
+            return enhance(model, df_state, tensor).cpu().numpy()
+        finally:
+            if (use_cuda and
+                    torch.cuda.memory_reserved() - torch.cuda.memory_allocated() >= 256 * 1024**2):
+                torch.cuda.empty_cache()
