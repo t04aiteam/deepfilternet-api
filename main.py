@@ -20,7 +20,7 @@ from schemas.request import HealthResponse
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Warm up at startup: fails fast if weights can't be loaded.
-    async with idle_model.lifespan():
+    async with idle_model.lifespan(preload=True):
         yield
 
 
