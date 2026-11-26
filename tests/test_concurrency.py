@@ -19,7 +19,7 @@ from models import loader  # noqa: E402
 
 class ConcurrentEnhanceTest(unittest.IsolatedAsyncioTestCase):
     async def test_overlapping_requests_run_one_enhance_at_a_time(self):
-        """The model is shared; the deleted CUDA lock's job now belongs to IdleModel."""
+        """One model serves every request, so IdleModel runs one enhance at a time."""
         state = {"running": 0, "most": 0}
         lock = threading.Lock()
 
