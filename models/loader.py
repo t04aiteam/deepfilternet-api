@@ -19,7 +19,6 @@ the GPU with ``CUDA_VISIBLE_DEVICES=""`` before launch.
 import gc
 import os
 import threading
-from contextlib import nullcontext
 
 import numpy as np
 import torch
@@ -132,11 +131,9 @@ def enhance_waveform(audio: np.ndarray) -> np.ndarray:
     model, df_state = get_model()
     tensor = torch.from_numpy(np.ascontiguousarray(audio))
     use_cuda = torch.cuda.is_initialized()
-    # Keep cleanup inside the same lock as CUDA inference.
-    with _lock if use_cuda else nullcontext():
-        try:
-            return enhance(model, df_state, tensor).cpu().numpy()
-        finally:
-            if (use_cuda and
-                    torch.cuda.memory_reserved() - torch.cuda.memory_allocated() >= 256 * 1024**2):
-                torch.cuda.empty_cache()
+    try:
+        return enhance(model, df_state, tensor).cpu().numpy()
+    finally:
+        if (use_cuda and
+                torch.cuda.memory_reserved() - torch.cuda.memory_allocated() >= 256 * 1024**2):
+            torch.cuda.empty_cache()
